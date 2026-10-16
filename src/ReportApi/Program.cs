@@ -19,8 +19,33 @@ app.MapPost("/reports/test", async () =>
     return Results.Json(new { file = outPath, method });
 });
 
-app.MapPost("/reports", async () =>
+app.MapPost("/reports", async (HttpRequest req) =>
 {
+    // Parse the raw body: ReadFromJsonAsync rejects curl -d (it sends a form content-type).
+    var force = false;
+    using (var reader = new StreamReader(req.Body, System.Text.Encoding.UTF8))
+    {
+        var raw = await reader.ReadToEndAsync();
+        if (!string.IsNullOrWhiteSpace(raw))
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(raw);
+                force = doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                        && doc.RootElement.TryGetProperty("force", out var f)
+                        && f.ValueKind == System.Text.Json.JsonValueKind.True;
+            }
+            catch { force = false; }
+        }
+    }
+
+    if (!force)
+    {
+        var existing = Reports.GetToday();
+        if (existing is not null)
+            return Results.Json(new { id = existing.Id, file = $"/reports/{existing.Id}/file" });
+    }
+
     var id = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..6];
     await GenerateReportAsync(id);
     return Results.Created($"/reports/{id}", new { id, file = $"/reports/{id}/file" });

@@ -22,4 +22,14 @@ public static class Reports
         using var r = cmd.ExecuteReader();
         return r.Read() ? new ReportRecord(r.GetString(0), r.GetString(1), r.GetString(2)) : null;
     }
+
+    public static ReportRecord? GetToday()
+    {
+        using var conn = Db.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT id, path, created_at FROM reports WHERE date(created_at) = date('now') ORDER BY created_at DESC LIMIT 1;";
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? new ReportRecord(r.GetString(0), r.GetString(1), r.GetString(2)) : null;
+    }
 }

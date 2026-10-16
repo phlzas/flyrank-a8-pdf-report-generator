@@ -28,3 +28,16 @@ bursty enough that holding the HTTP request open (and a worker thread) for the
 whole render hurts latency or throughput - e.g. large reports, many concurrent
 requests, or retries - so the request can return `202 Accepted` with a status
 URL and the job writes the PDF and flips the record to "ready" when done.
+
+## Duplicate requests
+
+A duplicate request should not produce a second file because the report for a
+given day is the same artifact, so regenerating it wastes CPU and disk and
+leaves the caller with two links to identical content - returning the existing
+id keeps the day's report a single, stable resource.
+
+`force` is for the case where you deliberately want a fresh render anyway - for
+example after the underlying data changed, or to re-run the pipeline on demand -
+so `{"force":true}` bypasses the once-per-day check and always generates a new
+report.
+
