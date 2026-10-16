@@ -29,22 +29,42 @@ public static class Db
     public static void EnsureSchema()
     {
         using var conn = Open();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            CREATE TABLE IF NOT EXISTS orders(
-                id         INTEGER PRIMARY KEY,
-                customer   TEXT,
-                product    TEXT,
-                amount     REAL,
-                created_at TEXT
-            );
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                CREATE TABLE IF NOT EXISTS orders(
+                    id         INTEGER PRIMARY KEY,
+                    customer   TEXT,
+                    product    TEXT,
+                    amount     REAL,
+                    created_at TEXT
+                );
 
-            CREATE TABLE IF NOT EXISTS reports(
-                id         TEXT PRIMARY KEY,
-                path       TEXT,
-                created_at TEXT
-            );
-            """;
-        cmd.ExecuteNonQuery();
+                CREATE TABLE IF NOT EXISTS reports(
+                    id         TEXT PRIMARY KEY,
+                    path       TEXT,
+                    created_at TEXT
+                );
+                """;
+            cmd.ExecuteNonQuery();
+        }
+
+        // Migrate pre-existing report.db files that predate the newer columns.
+        TryAddColumn(conn, "reports", "status", "TEXT NOT NULL DEFAULT 'done'");
+        TryAddColumn(conn, "reports", "days", "INTEGER NOT NULL DEFAULT 7");
+    }
+
+    static void TryAddColumn(SqliteConnection conn, string table, string column, string declaration)
+    {
+        try
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {declaration};";
+            cmd.ExecuteNonQuery();
+        }
+        catch (SqliteException ex) when (ex.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase))
+        {
+            // Column already exists - the database is already migrated.
+        }
     }
 }

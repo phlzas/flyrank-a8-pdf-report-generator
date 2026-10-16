@@ -20,7 +20,10 @@ public static class HtmlReport
                      color: #0F1115; background: #FBFAF7; }
               h1 { margin: 0 0 4px; font-size: 22px; color: #0F1115; }
               .accent { width: 56px; height: 4px; background: #2E7D6B; border-radius: 2px; margin-bottom: 18px; }
-              .meta { color: #5A616B; font-size: 11px; margin-bottom: 20px; }
+              .meta { color: #5A616B; font-size: 11px; margin-bottom: 20px; padding-bottom: 12px;
+                      border-bottom: 1px solid #E4E7EB; }
+              .window { display: inline-block; background: #E8F2EF; color: #2E7D6B; border-radius: 10px;
+                        padding: 2px 8px; font-size: 10px; margin-left: 8px; }
               .cards { display: flex; gap: 12px; margin-bottom: 24px; }
               .card { flex: 1; background: #FFFFFF; border: 1px solid #E4E7EB; border-radius: 8px;
                       padding: 12px 14px; }
@@ -47,7 +50,8 @@ public static class HtmlReport
             """);
 
         sb.Append($"<h1>FlyRank Shop Report</h1><div class=\"accent\"></div>");
-        sb.Append($"<div class=\"meta\">Generated {WebUtility.HtmlEncode(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"))} UTC</div>");
+        sb.Append($"<div class=\"meta\">Generated {WebUtility.HtmlEncode(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"))} UTC" +
+                  $"<span class=\"window\">last {data.Days} days</span></div>");
 
         sb.Append("<div class=\"cards\">");
         sb.Append($"<div class=\"card\"><div class=\"label\">Total orders</div><div class=\"value accent-text\">{data.TotalOrders}</div></div>");
@@ -55,7 +59,7 @@ public static class HtmlReport
         var top = data.TopProducts.FirstOrDefault();
         var topName = top is null ? "-" : top.Product;
         sb.Append($"<div class=\"card\"><div class=\"label\">Top product</div><div class=\"value\">{WebUtility.HtmlEncode(topName)}</div></div>");
-        sb.Append($"<div class=\"card\"><div class=\"label\">Last 7 days</div><div class=\"value\">{data.OrdersPerDay.Sum(d => d.Orders)} orders</div></div>");
+        sb.Append($"<div class=\"card\"><div class=\"label\">Last {data.Days} days</div><div class=\"value\">{data.OrdersPerDay.Sum(d => d.Orders)} orders</div></div>");
         sb.Append("</div>");
 
         sb.Append("<h2>Revenue by product <span>(top 5)</span></h2><table>");
@@ -70,7 +74,7 @@ public static class HtmlReport
         }
         sb.Append("</tbody></table>");
 
-        sb.Append("<h2>Orders per day <span>(last 7 days)</span></h2><table><tbody><tr class=\"bar-row\"><td>");
+        sb.Append($"<h2>Orders per day <span>(last {data.Days} days)</span></h2><table><tbody><tr class=\"bar-row\"><td>");
         foreach (var d in data.OrdersPerDay)
             sb.Append($"<span class=\"day-pill\">{WebUtility.HtmlEncode(d.Day)}: {d.Orders}</span>");
         sb.Append("</td></tr></tbody></table>");

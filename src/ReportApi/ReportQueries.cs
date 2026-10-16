@@ -2,12 +2,19 @@ public record TopProduct(string Product, double Revenue);
 public record DayCount(string Day, long Orders);
 public record OrderRow(long Id, string Customer, string Product, double Amount, string CreatedAt);
 public record ReportData(long TotalOrders, double TotalRevenue,
-    IReadOnlyList<TopProduct> TopProducts, IReadOnlyList<DayCount> OrdersPerDay);
+    IReadOnlyList<TopProduct> TopProducts, IReadOnlyList<DayCount> OrdersPerDay, int Days);
 
 public static class ReportQueries
 {
-    public static ReportData GetReportData()
+    public const int DefaultDays = 7;
+    public const int MinDays = 1;
+    public const int MaxDays = 365;
+
+    public static int ClampDays(int days) => Math.Clamp(days, MinDays, MaxDays);
+
+    public static ReportData GetReportData(int days = DefaultDays)
     {
+        days = ClampDays(days);
         using var conn = Db.Open();
 
         long totalOrders;
@@ -39,13 +46,14 @@ public static class ReportQueries
         using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText =
-                "SELECT date(created_at) AS day, COUNT(*) AS orders FROM orders WHERE date(created_at) >= date('now','-6 days') GROUP BY day ORDER BY day;";
+                "SELECT date(created_at) AS day, COUNT(*) AS orders FROM orders WHERE date(created_at) >= date('now', $offset) GROUP BY day ORDER BY day;";
+            cmd.Parameters.AddWithValue("$offset", $"-{days - 1} days");
             using var r = cmd.ExecuteReader();
             while (r.Read())
                 ordersPerDay.Add(new DayCount(r.GetString(0), r.GetInt64(1)));
         }
 
-        return new ReportData(totalOrders, Math.Round(totalRevenue, 2), topProducts, ordersPerDay);
+        return new ReportData(totalOrders, Math.Round(totalRevenue, 2), topProducts, ordersPerDay, days);
     }
 
     public static IReadOnlyList<OrderRow> GetTopOrders(int limit)
