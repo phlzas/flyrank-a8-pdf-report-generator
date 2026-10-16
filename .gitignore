@@ -1,0 +1,8 @@
+bin/
+obj/
+reports/
+report.db
+report.db-*
+*.pdf
+.vs/
+.idea/
