@@ -19,4 +19,35 @@ app.MapPost("/reports/test", async () =>
     return Results.Json(new { file = outPath, method });
 });
 
+app.MapPost("/reports", async () =>
+{
+    var id = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..6];
+    await GenerateReportAsync(id);
+    return Results.Created($"/reports/{id}", new { id, file = $"/reports/{id}/file" });
+});
+
+app.MapGet("/reports/{id}", (string id) =>
+{
+    var rec = Reports.Get(id);
+    return rec is null ? Results.NotFound() : Results.Json(rec);
+});
+
+app.MapGet("/reports/{id}/file", (string id) =>
+{
+    var rec = Reports.Get(id);
+    if (rec is null || !File.Exists(rec.Path)) return Results.NotFound();
+    return Results.File(rec.Path, "application/pdf");
+});
+
 app.Run();
+
+static async Task<string> GenerateReportAsync(string id)
+{
+    var data = ReportQueries.GetReportData();
+    var orders = ReportQueries.GetTopOrders(60);
+    var html = HtmlReport.Build(data, orders);
+    var outPath = Path.Combine(Db.ReportsDir, $"{id}.pdf");
+    await PdfRenderer.RenderToPdfAsync(html, outPath);
+    Reports.Insert(id, outPath, DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss"));
+    return outPath;
+}

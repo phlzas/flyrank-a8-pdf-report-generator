@@ -38,6 +38,12 @@ public static class Db
                 amount     REAL,
                 created_at TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS reports(
+                id         TEXT PRIMARY KEY,
+                path       TEXT,
+                created_at TEXT
+            );
             """;
         cmd.ExecuteNonQuery();
     }
