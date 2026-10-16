@@ -207,3 +207,16 @@ report.db            SQLite database (gitignored)
 - [x] File served from disk by link; JSON never carries bytes
 - [x] Duplicate requests make one file (same id, one PDF); `force` overrides
 - [x] Public repo, >= 7 commits, README with commands/SQL/proof/screenshot; `reports/` + `report.db` gitignored
+
+## Bonus stage: AI vs me
+
+For the bonus stage I built the same service twice and compared: a fresh agent given only
+a short brief-level prompt, **no repo, no environment info, and no iteration** (its untouched
+output is in `ai-version/`), versus the tested, staged implementation here. The full write-up is in
+[`ai-version/AI-VS-ME.md`](ai-version/AI-VS-ME.md).
+
+The short version: both converged on the same architecture and the same print-CSS tricks.
+Where they diverged is exactly what you can only find by *running* the code - the AI's
+`{"force":true}` handling silently no-ops for `curl -d` (the same `ReadFromJsonAsync`
+content-type trap I hit and fixed), plus a hardcoded Edge path, a hardcoded port, a
+double render, and a seed that only *usually* lands on 200.
